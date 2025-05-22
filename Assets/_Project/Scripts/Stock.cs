@@ -1,6 +1,10 @@
 [System.Serializable]
-public class Stock {
+public class Stock
+{
     public string stockName;
     public float currentPrice;
-    public float volatility; // Range: 0.01 to 0.3
+    public float volatility;
+
+    public int quantityOwned = 0;
+    public float totalEarned = 0f;
 }

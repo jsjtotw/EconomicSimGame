@@ -1,8 +1,9 @@
 using UnityEngine;
 using TMPro;
 
-public class BudgetManager : MonoBehaviour {
-    public static BudgetManager Instance; // Singleton
+public class BudgetManager : MonoBehaviour
+{
+    public static BudgetManager Instance;
 
     public float income = 5000f;
     public float expenses = 2000f;
@@ -17,29 +18,37 @@ public class BudgetManager : MonoBehaviour {
     public TextMeshProUGUI netWorthText;
 
     void Awake() {
-        Instance = this;
+        if (Instance == null) {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        } else {
+            Destroy(gameObject);
+        }
     }
 
-    void Start() {
+    public void InitializeBudget()
+    {
         UpdateNetWorth();
         UpdateUI();
-        InvokeRepeating(nameof(SimulateIncomeExpense), 2f, 10f);
     }
-
-    public void UpdateNetWorth() {
-        netWorth = cashOnHand + stockAssets - loanDebt;
-    }
-
-    public void SimulateIncomeExpense() {
+    public void SimulateIncomeExpense()
+    {
         cashOnHand += income - expenses;
         UpdateNetWorth();
         UpdateUI();
     }
 
-    public void UpdateUI() {
+    public void UpdateNetWorth()
+    {
+        netWorth = cashOnHand + stockAssets - loanDebt;
+    }
+
+    public void UpdateUI()
+    {
         incomeText.text = $"Income: ${income:F0}";
         expensesText.text = $"Expenses: ${expenses:F0}";
         cashText.text = $"Cash: ${cashOnHand:F0}";
         netWorthText.text = $"Net Worth: ${netWorth:F0}";
     }
+    
 }
