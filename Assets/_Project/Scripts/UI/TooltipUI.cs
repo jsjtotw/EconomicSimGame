@@ -54,18 +54,19 @@ public class TooltipUI : MonoBehaviour
 
     private void PositionTooltip(Vector2 mousePos)
     {
-        transform.position = mousePos;
-
-        // Optional: Adjust position to prevent going off-screen
-        Vector2 pivot = Vector2.zero; // Default bottom-left
-        if (mousePos.x + backgroundRect.sizeDelta.x > Screen.width)
-        {
-            pivot.x = 1; // Move pivot to right (anchor to right edge of mouse)
-        }
-        if (mousePos.y + backgroundRect.sizeDelta.y > Screen.height)
-        {
-            pivot.y = 1; // Move pivot to top (anchor to top edge of mouse)
-        }
+        Vector2 pivot = new Vector2(0, 1); // Always anchor top-left of tooltip
         backgroundRect.pivot = pivot;
+
+        Vector2 offset = new Vector2(10f, -10f); // Move slightly right and downward
+        Vector2 anchoredPosition = mousePos + offset;
+
+        // Optional: Clamp to stay within screen bounds
+        float tooltipWidth = backgroundRect.sizeDelta.x;
+        float tooltipHeight = backgroundRect.sizeDelta.y;
+
+        anchoredPosition.x = Mathf.Clamp(anchoredPosition.x, 0, Screen.width - tooltipWidth);
+        anchoredPosition.y = Mathf.Clamp(anchoredPosition.y, tooltipHeight, Screen.height);
+
+        transform.position = anchoredPosition;
     }
 }

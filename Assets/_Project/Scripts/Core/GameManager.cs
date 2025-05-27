@@ -32,17 +32,16 @@ public class GameManager : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            Destroy(gameObject);
+            Destroy(gameObject); // This destroys *duplicate* managers
         }
         else
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            DontDestroyOnLoad(gameObject); // This makes the *first* manager persist
         }
-
-        // Get references to all systems in the scene
-        // FIX: Replaced FindObjectOfType with FindFirstObjectByType
-        Budget = FindFirstObjectByType<BudgetSystem>();
+    // Get references to all systems in the scene
+    // FIX: Replaced FindObjectOfType with FindFirstObjectByType
+    Budget = FindFirstObjectByType<BudgetSystem>();
         Player = FindFirstObjectByType<PlayerStats>();
         StockMarket = FindFirstObjectByType<StockMarketSystem>();
         Credit = FindFirstObjectByType<CreditSystem>();

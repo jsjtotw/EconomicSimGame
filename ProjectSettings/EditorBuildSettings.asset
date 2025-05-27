@@ -12,7 +12,7 @@ EditorBuildSettings:
     path: Assets/_Project/Scenes/MainMenuScene.unity
     guid: c2855fb7ac32cef4aba032a1cb4c0ac5
   - enabled: 1
-    path: Assets/_Project/Scenes/CompanySelectionScene.unity
+    path: Assets/_Project/Scenes/Legacy/CompanySelectionScene.unity
     guid: bf3311647b2af11448785076e0202795
   - enabled: 1
     path: Assets/_Project/Scenes/GameScene.unity
