@@ -1,3 +1,4 @@
+/* 
 using UnityEngine;
 
 public class TimeManager : MonoBehaviour
@@ -64,3 +65,4 @@ public class TimeManager : MonoBehaviour
         stockManager?.UpdateStockPrices();
     }
 }
+*/

@@ -1,0 +1,82 @@
+[
+  {
+    "id": "event001",
+    "title": "Tech Bubble Burst",
+    "description": "AI stocks plummet by 40%.",
+    "target": "AI",
+    "effect": "decrease",
+    "magnitude": 0.4
+  },
+  {
+    "id": "event002",
+    "title": "Pandemic Panic",
+    "description": "General economy shrinks. All stocks -10%.",
+    "target": "all",
+    "effect": "decrease",
+    "magnitude": 0.1
+  },
+  {
+    "id": "event003",
+    "title": "Green Energy Boom",
+    "description": "Renewable energy stocks surge by 25%.",
+    "target": "Green Energy",
+    "effect": "increase",
+    "magnitude": 0.25
+  },
+  {
+    "id": "event004",
+    "title": "Food Shortage",
+    "description": "Food Chain stocks rise due to increased demand by 15%.",
+    "target": "Food Chain",
+    "effect": "increase",
+    "magnitude": 0.15
+  },
+  {
+    "id": "event005",
+    "title": "Global Trade War",
+    "description": "All stocks experience high volatility, prices fluctuate wildly.",
+    "target": "all",
+    "effect": "volatility",
+    "magnitude": 1.5
+  },
+  {
+    "id": "event006",
+    "title": "Major AI Ethics Scandal",
+    "description": "A prominent AI firm is fined heavily for privacy breaches. AI stocks decrease by 20%.",
+    "target": "AI",
+    "effect": "decrease",
+    "magnitude": 0.2
+  },
+  {
+    "id": "event007",
+    "title": "Global Interest Rate Cut",
+    "description": "Central banks cut interest rates to stimulate growth. All stocks increase by 8%.",
+    "target": "all",
+    "effect": "increase",
+    "magnitude": 0.08
+  },
+  {
+    "id": "event008",
+    "title": "Breakthrough in Vertical Farming",
+    "description": "New technology promises cheaper, higher-yield crops. Food Chain stocks rise by 18%.",
+    "target": "Food Chain",
+    "effect": "increase",
+    "magnitude": 0.18
+  },
+  {
+    "id": "event009",
+    "title": "Geopolitical Tensions Escalate",
+    "description": "Uncertainty in key regions leads to market instability. All stocks experience increased volatility.",
+    "target": "all",
+    "effect": "volatility",
+    "magnitude": 1.8
+  },
+  {
+    "id": "event010",
+    "title": "New Green Energy Subsidies",
+    "description": "Governments announce massive subsidies for renewable energy projects. Green Energy stocks jump by 30%.",
+    "target": "Green Energy",
+    "effect": "increase",
+    "magnitude": 0.3
+  }
+]

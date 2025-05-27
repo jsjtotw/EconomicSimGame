@@ -1,3 +1,4 @@
+/*
 using UnityEngine;
 
 public class BudgetManager : MonoBehaviour
@@ -42,3 +43,4 @@ public class BudgetManager : MonoBehaviour
         // UI update removed
     }
 }
+*/

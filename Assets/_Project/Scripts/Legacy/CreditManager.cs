@@ -1,3 +1,4 @@
+/*
 using UnityEngine;
 
 public class CreditManager : MonoBehaviour
@@ -50,3 +51,4 @@ public class CreditManager : MonoBehaviour
         // UI update removed
     }
 }
+*/

@@ -1,0 +1,1991 @@
+// File: Assets/Scripts/Core/GameManager.cs
+
+using UnityEngine;
+
+using System; // For Action
+
+using System.Collections.Generic; // For List
+
+
+
+public class GameManager : MonoBehaviour
+
+{
+
+    public static GameManager Instance { get; private set; }
+
+
+
+    // References to other core systems
+
+    public BudgetSystem Budget { get; private set; }
+
+    public PlayerStats Player { get; private set; }
+
+    public StockMarketSystem StockMarket { get; private set; }
+
+    public CreditSystem Credit { get; private set; }
+
+    public EventSystem EventManager { get; private set; }
+
+    public AchievementSystem AchievementManager { get; private set; }
+
+    public StockTradeSystem StockTrader { get; private set; }
+
+
+
+    // Game state variables
+
+    public float winNetWorthTarget = 1000000f; // $1 Million
+
+    public float bankruptcyThreshold = -10000f; // E.g., if net worth goes below -$10,000
+
+    public bool gameEnded = false;
+
+
+
+    // Company specific properties (can be moved to PlayerStats if preferred)
+
+    public float playerEventSensitivity = 1.0f; // Default, adjusted by CompanySelector
+
+
+
+    // Events for global state changes
+
+    public static event Action OnGameStart;
+
+    public static event Action OnGameWin;
+
+    public static event Action OnGameLose;
+
+
+
+    void Awake()
+
+    {
+
+        if (Instance != null && Instance != this)
+
+        {
+
+            Destroy(gameObject);
+
+        }
+
+        else
+
+        {
+
+            Instance = this;
+
+            DontDestroyOnLoad(gameObject);
+
+        }
+
+
+
+        // Get references to all systems in the scene
+
+        Budget = FindObjectOfType<BudgetSystem>();
+
+        Player = FindObjectOfType<PlayerStats>();
+
+        StockMarket = FindObjectOfType<StockMarketSystem>();
+
+        Credit = FindObjectOfType<CreditSystem>();
+
+        EventManager = FindObjectOfType<EventSystem>();
+
+        AchievementManager = FindObjectOfType<AchievementSystem>();
+
+        StockTrader = FindObjectOfType<StockTradeSystem>();
+
+    }
+
+
+
+    void Start()
+
+    {
+
+        // Subscribe to budget changes for win/lose conditions
+
+        if (Budget != null)
+
+        {
+
+            Budget.onNetWorthChanged += CheckWinLoseConditions;
+
+        }
+
+
+
+        // Game starts via StartupManager (or CompanySelector will call StartGame)
+
+    }
+
+
+
+    void OnDestroy()
+
+    {
+
+        if (Budget != null)
+
+        {
+
+            Budget.onNetWorthChanged -= CheckWinLoseConditions;
+
+        }
+
+    }
+
+
+
+    public void StartGame(CompanyProfile chosenCompany = null)
+
+    {
+
+        if (gameEnded) return;
+
+
+
+        Debug.Log("Game Started!");
+
+        Time.timeScale = 1; // Ensure time is running
+
+
+
+        // Apply company bonuses if a company was chosen
+
+        if (chosenCompany != null)
+
+        {
+
+            // Apply cash bonus
+
+            Budget.cashOnHand += chosenCompany.startingCashBonus;
+
+            Budget.UpdateNetWorth(); // Update net worth immediately after cash change
+
+
+
+            // Apply stock value bonus (StockMarketSystem will handle applying to initial stocks)
+
+            // PlayerStats should apply XP multiplier
+
+            Player.xpGainMultiplier = chosenCompany.xpGainRateMultiplier;
+
+
+
+            playerEventSensitivity = chosenCompany.eventSensitivityMultiplier;
+
+
+
+            Debug.Log($"Chosen company: {chosenCompany.companyName}. Bonuses applied.");
+
+        }
+
+        
+
+        // Initial setup for systems. They should ideally handle their own Start() logic.
+
+        // If specific initialization order is needed, call public init methods here.
+
+
+
+        OnGameStart?.Invoke(); // Notify other systems that the game has started
+
+    }
+
+
+
+    void CheckWinLoseConditions(float currentNetWorth)
+
+    {
+
+        if (gameEnded) return;
+
+
+
+        if (currentNetWorth >= winNetWorthTarget)
+
+        {
+
+            WinGame();
+
+        }
+
+        else if (currentNetWorth <= bankruptcyThreshold)
+
+        {
+
+            LoseGame();
+
+        }
+
+    }
+
+
+
+    void WinGame()
+
+    {
+
+        gameEnded = true;
+
+        Debug.Log("YOU WIN!");
+
+        Time.timeScale = 0; // Pause game time
+
+        WinLoseManager.Instance?.ShowWinScreen(); // Delegate to WinLoseManager
+
+        OnGameWin?.Invoke();
+
+    }
+
+
+
+    public void LoseGame() // Public so CreditSystem can trigger if loans can't be repaid
+
+    {
+
+        if (gameEnded) return;
+
+        gameEnded = true;
+
+        Debug.Log("YOU LOSE!");
+
+        Time.timeScale = 0; // Pause game time
+
+        WinLoseManager.Instance?.ShowLoseScreen(); // Delegate to WinLoseManager
+
+        OnGameLose?.Invoke();
+
+    }
+
+}
+
+// File: Assets/Scripts/Player/PlayerStats.cs
+
+using UnityEngine;
+
+using System.Collections.Generic;
+
+using System; // For Action
+
+
+
+public class PlayerStats : MonoBehaviour
+
+{
+
+    public static PlayerStats Instance { get; private set; }
+
+
+
+    public int xp = 0;
+
+    public int level = 1;
+
+    public float xpGainMultiplier = 1.0f; // Adjusted by company selection
+
+
+
+    // Define XP required per level
+
+    private Dictionary<int, int> xpThresholds = new Dictionary<int, int>()
+
+    {
+
+        {1, 100}, // Level 1 to 2 requires 100 XP
+
+        {2, 250},
+
+        {3, 500},
+
+        {4, 1000},
+
+        {5, 2000},
+
+        {6, 4000},
+
+        {7, 8000},
+
+        {8, 16000},
+
+        {9, 32000},
+
+        {10, 64000}
+
+    };
+
+
+
+    // Event for level up (for AchievementSystem to subscribe to)
+
+    public event Action<int> onLevelUp;
+
+
+
+    void Awake()
+
+    {
+
+        if (Instance != null && Instance != this)
+
+        {
+
+            Destroy(gameObject);
+
+        }
+
+        else
+
+        {
+
+            Instance = this;
+
+        }
+
+    }
+
+
+
+    void Start()
+
+    {
+
+        // Initial UI update for XP/Level
+
+        DashboardUI.Instance?.UpdateXPUI(xp, level, GetXPRequiredForLevel(level));
+
+    }
+
+
+
+    public void GainXP(int amount)
+
+    {
+
+        if (GameManager.Instance.gameEnded) return; // Don't gain XP after game ends
+
+
+
+        xp += Mathf.RoundToInt(amount * xpGainMultiplier); // Apply multiplier
+
+        Debug.Log($"Gained {Mathf.RoundToInt(amount * xpGainMultiplier)} XP. Total XP: {xp}");
+
+        CheckForLevelUp();
+
+        DashboardUI.Instance?.UpdateXPUI(xp, level, GetXPRequiredForLevel(level)); // Update XP bar and level text
+
+    }
+
+
+
+    void CheckForLevelUp()
+
+    {
+
+        int xpToNextLevel = GetXPRequiredForLevel(level);
+
+
+
+        if (xpToNextLevel > 0 && xp >= xpToNextLevel)
+
+        {
+
+            LevelUp();
+
+        }
+
+    }
+
+
+
+    void LevelUp()
+
+    {
+
+        level++;
+
+        xp = xp - GetXPRequiredForLevel(level - 1); // Carry over excess XP
+
+        Debug.Log($"Leveled up! New Level: {level}");
+
+        onLevelUp?.Invoke(level); // Notify subscribers
+
+        AchievementSystem.Instance?.CheckAchievement("LevelUp", level);
+
+        // Implement basic perks here (e.g., faster stock analysis or unlock employees in Week 3)
+
+    }
+
+
+
+    public int GetXPRequiredForLevel(int targetLevel)
+
+    {
+
+        if (xpThresholds.ContainsKey(targetLevel))
+
+        {
+
+            return xpThresholds[targetLevel];
+
+        }
+
+        return -1; // Indicates no more defined levels
+
+    }
+
+}
+
+// File: Assets/Scripts/UI/DashboardUI.cs
+
+using UnityEngine;
+
+using TMPro;
+
+using UnityEngine.UI; // Make sure this is included for Buttons
+
+
+
+public class DashboardUI : MonoBehaviour
+
+{
+
+    public static DashboardUI Instance { get; private set; }
+
+
+
+    [Header("Top Bar UI")]
+
+    public TextMeshProUGUI cashText;
+
+    public TextMeshProUGUI netWorthText;
+
+    public TextMeshProUGUI debtText;
+
+    public TextMeshProUGUI xpLevelText; // For XP and Level display
+
+    public Slider xpBar; // For XP bar
+
+    public TextMeshProUGUI levelText; // Dedicated Level text
+
+    public TextMeshProUGUI timeText;
+
+
+
+    [Header("Budget & Credit UI")]
+
+    public TextMeshProUGUI incomeText;
+
+    public TextMeshProUGUI expensesText;
+
+    public TextMeshProUGUI loanText;
+
+    public TextMeshProUGUI interestText;
+
+
+
+    [Header("Stock Market UI")]
+
+    public Transform stockListContent; // Parent transform for stock entries
+
+    public GameObject stockEntryPrefab; // Prefab for individual stock entries
+
+
+
+    // --- NEW FOR MVP: Time Control Buttons ---
+
+    [Header("Time Control UI")]
+
+    public Button pauseButton;
+
+    public Button playSpeed1xButton;
+
+    public Button playSpeed2xButton;
+
+    public Button playSpeed4xButton; // Or whatever speeds you want
+
+
+
+    void Awake()
+
+    {
+
+        if (Instance != null && Instance != this)
+
+        {
+
+            Destroy(gameObject);
+
+        }
+
+        else
+
+        {
+
+            Instance = this;
+
+        }
+
+    }
+
+
+
+    void Start()
+
+    {
+
+        // Initial UI updates (ensuring managers are initialized)
+
+        UpdateCash(0); // Dummy update, will be updated by BudgetSystem
+
+        UpdateNetWorth(0);
+
+        UpdateDebt(0);
+
+        UpdateXP(0, 1, 0, 100); // Dummy update
+
+        UpdateTimeText(2025, 1, 1, 0); // Dummy update
+
+
+
+        // Ensure managers are assigned
+
+        if (BudgetSystem.Instance != null) BudgetSystem.Instance.onCashChanged += UpdateCash;
+
+        if (BudgetSystem.Instance != null) BudgetSystem.Instance.onNetWorthChanged += UpdateNetWorth;
+
+        if (BudgetSystem.Instance != null) BudgetSystem.Instance.onIncomeChanged += UpdateIncome;
+
+        if (BudgetSystem.Instance != null) BudgetSystem.Instance.onExpensesChanged += UpdateExpenses;
+
+        if (CreditSystem.Instance != null) CreditSystem.Instance.onDebtChanged += UpdateDebt;
+
+        if (CreditSystem.Instance != null) CreditSystem.Instance.onInterestRateChanged += UpdateInterest;
+
+        if (PlayerStats.Instance != null) PlayerStats.Instance.onXPChanged += UpdateXP;
+
+        if (TimeManager.Instance != null) TimeManager.Instance.onHourAdvanced += UpdateTimeBasedOnHour; // Subscribe to hourly updates
+
+        if (StockMarketSystem.Instance != null) StockMarketSystem.Instance.onStocksInitialized += PopulateStockList;
+
+
+
+        // --- NEW FOR MVP: Link Time Control Buttons ---
+
+        if (pauseButton != null) pauseButton.onClick.AddListener(OnPauseButtonClicked);
+
+        if (playSpeed1xButton != null) playSpeed1xButton.onClick.AddListener(() => OnSpeedButtonClicked(1.0f));
+
+        if (playSpeed2xButton != null) playSpeed2xButton.onClick.AddListener(() => OnSpeedButtonClicked(2.0f));
+
+        if (playSpeed4xButton != null) playSpeed4xButton.onClick.AddListener(() => OnSpeedButtonClicked(4.0f));
+
+
+
+        // Initial populate if stocks are already ready
+
+        if (StockMarketSystem.Instance != null && StockMarketSystem.Instance.IsInitialized)
+
+        {
+
+             PopulateStockList();
+
+        }
+
+    }
+
+
+
+    void OnDestroy()
+
+    {
+
+        // Unsubscribe to prevent memory leaks
+
+        if (BudgetSystem.Instance != null) BudgetSystem.Instance.onCashChanged -= UpdateCash;
+
+        if (BudgetSystem.Instance != null) BudgetSystem.Instance.onNetWorthChanged -= UpdateNetWorth;
+
+        if (BudgetSystem.Instance != null) BudgetSystem.Instance.onIncomeChanged -= UpdateIncome;
+
+        if (BudgetSystem.Instance != null) BudgetSystem.Instance.onExpensesChanged -= UpdateExpenses;
+
+        if (CreditSystem.Instance != null) CreditSystem.Instance.onDebtChanged -= UpdateDebt;
+
+        if (CreditSystem.Instance != null) CreditSystem.Instance.onInterestRateChanged -= UpdateInterest;
+
+        if (PlayerStats.Instance != null) PlayerStats.Instance.onXPChanged -= UpdateXP;
+
+        if (TimeManager.Instance != null) TimeManager.Instance.onHourAdvanced -= UpdateTimeBasedOnHour;
+
+        if (StockMarketSystem.Instance != null) StockMarketSystem.Instance.onStocksInitialized -= PopulateStockList;
+
+
+
+        // --- NEW FOR MVP: Unsubscribe Time Control Buttons ---
+
+        if (pauseButton != null) pauseButton.onClick.RemoveAllListeners();
+
+        if (playSpeed1xButton != null) playSpeed1xButton.onClick.RemoveAllListeners();
+
+        if (playSpeed2xButton != null) playSpeed2xButton.onClick.RemoveAllListeners();
+
+        if (playSpeed4xButton != null) playSpeed4xButton.onClick.RemoveAllListeners();
+
+    }
+
+
+
+    // Existing update methods...
+
+    public void UpdateCash(float newCash)
+
+    {
+
+        cashText.text = $"Cash: ${newCash:N0}";
+
+    }
+
+
+
+    public void UpdateNetWorth(float newNetWorth)
+
+    {
+
+        netWorthText.text = $"Net Worth: ${newNetWorth:N0}";
+
+    }
+
+
+
+    public void UpdateDebt(float newDebt)
+
+    {
+
+        debtText.text = $"Debt: ${newDebt:N0}";
+
+    }
+
+
+
+    public void UpdateIncome(float newIncome)
+
+    {
+
+        incomeText.text = $"Income: ${newIncome:N0}/mo";
+
+    }
+
+
+
+    public void UpdateExpenses(float newExpenses)
+
+    {
+
+        expensesText.text = $"Expenses: ${newExpenses:N0}/mo";
+
+    }
+
+
+
+    public void UpdateInterest(float newInterestRate)
+
+    {
+
+        interestText.text = $"Interest: {newInterestRate:P1}"; // P1 for percentage with 1 decimal
+
+    }
+
+
+
+    public void UpdateXP(int currentXP, int currentLevel, int xpForNextLevel, float progress)
+
+    {
+
+        xpLevelText.text = $"LVL {currentLevel} | XP: {currentXP}";
+
+        levelText.text = $"Level: {currentLevel}";
+
+        xpBar.value = progress; // progress is typically 0.0 to 1.0
+
+    }
+
+
+
+    public void UpdateTimeText(int year, int month, int day, int hour)
+
+    {
+
+        string formattedHour = hour.ToString("D2") + ":00"; // "00:00", "01:00", etc.
+
+        timeText.text = $"Date: {month}/{day}/{year} | {formattedHour}";
+
+    }
+
+
+
+    private void UpdateTimeBasedOnHour()
+
+    {
+
+        if (TimeManager.Instance != null)
+
+        {
+
+            UpdateTimeText(TimeManager.Instance.year, TimeManager.Instance.month, TimeManager.Instance.day, TimeManager.Instance.hour);
+
+        }
+
+    }
+
+
+
+
+
+    public void PopulateStockList()
+
+    {
+
+        // Clear existing entries first
+
+        foreach (Transform child in stockListContent)
+
+        {
+
+            Destroy(child.gameObject);
+
+        }
+
+
+
+        if (StockMarketSystem.Instance != null && StockMarketSystem.Instance.CurrentStocks != null)
+
+        {
+
+            foreach (var stock in StockMarketSystem.Instance.CurrentStocks)
+
+            {
+
+                GameObject stockUI = Instantiate(stockEntryPrefab, stockListContent);
+
+                StockUIEntry entry = stockUI.GetComponent<StockUIEntry>();
+
+                if (entry != null)
+
+                {
+
+                    entry.Initialize(stock);
+
+                }
+
+            }
+
+        }
+
+    }
+
+
+
+    // --- NEW FOR MVP: Time Control Methods ---
+
+    private void OnPauseButtonClicked()
+
+    {
+
+        if (TimeManager.Instance != null)
+
+        {
+
+            TimeManager.Instance.TogglePause();
+
+            // Optional: Change button sprite/text based on isPaused state
+
+        }
+
+    }
+
+
+
+    private void OnSpeedButtonClicked(float speed)
+
+    {
+
+        if (TimeManager.Instance != null)
+
+        {
+
+            TimeManager.Instance.SetTimeScale(speed);
+
+        }
+
+    }
+
+    public void UpdateBudgetUI(float income, float expenses, float cash, float netWorth)
+
+    {
+
+        UpdateIncome(income);
+
+        UpdateExpenses(expenses);
+
+        UpdateCash(cash);
+
+        UpdateNetWorth(netWorth);
+
+    }
+
+
+
+    public void UpdateCreditUI(float loanAmount, float interestRate)
+
+    {
+
+        UpdateDebt(loanAmount);
+
+        UpdateInterest(interestRate);
+
+    }
+
+
+
+}
+
+// File: Assets/Scripts/UI/StockUIEntry.cs
+
+using UnityEngine;
+
+using TMPro;
+
+using UnityEngine.UI; // For Button and Image
+
+using System.Collections.Generic; // For List
+
+
+
+public class StockUIEntry : MonoBehaviour
+
+{
+
+    [Header("Stock Info UI")]
+
+    public TextMeshProUGUI stockNameText;
+
+    public TextMeshProUGUI priceText;
+
+    public TextMeshProUGUI ownedSharesText; // --- NEW FOR MVP ---
+
+    public Image trendIndicatorImage; // --- NEW FOR MVP --- (e.g., an arrow sprite)
+
+    public Color priceIncreaseColor = Color.green; // --- NEW FOR MVP ---
+
+    public Color priceDecreaseColor = Color.red; // --- NEW FOR MVP ---
+
+    public Sprite upArrowSprite; // --- NEW FOR MVP ---
+
+    public Sprite downArrowSprite; // --- NEW FOR MVP ---
+
+    public Sprite neutralSprite; // --- NEW FOR MVP --- (e.g., a dash or circle)
+
+
+
+    [Header("Buy/Sell UI")]
+
+    public TMP_InputField buyQuantityInput;
+
+    public Button buyButton;
+
+    public TMP_InputField sellQuantityInput;
+
+    public Button sellButton;
+
+
+
+    // --- NEW FOR MVP: Error/Info Text ---
+
+    public TextMeshProUGUI messageText; // For displaying errors like "Cannot afford"
+
+
+
+    private Stock currentStock;
+
+
+
+    // --- NEW FOR MVP: For trend calculation ---
+
+    private float lastPrice;
+
+
+
+    void Start()
+
+    {
+
+        buyButton.onClick.AddListener(OnBuyButtonClicked);
+
+        sellButton.onClick.AddListener(OnSellButtonClicked);
+
+
+
+        // --- NEW FOR MVP: Clear message text initially ---
+
+        if (messageText != null) messageText.text = "";
+
+    }
+
+
+
+    void OnDestroy()
+
+    {
+
+        buyButton.onClick.RemoveListener(OnBuyButtonClicked);
+
+        sellButton.onClick.RemoveListener(OnSellButtonClicked);
+
+        if (currentStock != null)
+
+        {
+
+            currentStock.onPriceChanged -= UpdatePrice; // Unsubscribe when destroyed
+
+        }
+
+    }
+
+
+
+    public void Initialize(Stock stock)
+
+    {
+
+        currentStock = stock;
+
+        stockNameText.text = stock.Name;
+
+        lastPrice = stock.CurrentPrice; // Initialize last price for trend calculation
+
+
+
+        // Subscribe to price changes for real-time updates
+
+        currentStock.onPriceChanged += UpdatePrice;
+
+        UpdatePrice(stock.CurrentPrice); // Initial price update
+
+
+
+        // Subscribe to owned shares change
+
+        if (StockTradeSystem.Instance != null)
+
+        {
+
+            StockTradeSystem.Instance.onSharesOwnedChanged += UpdateOwnedSharesDisplay;
+
+            UpdateOwnedSharesDisplay(stock.Ticker, StockTradeSystem.Instance.GetOwnedShares(stock.Ticker)); // Initial update
+
+        }
+
+    }
+
+
+
+    private void UpdatePrice(float newPrice)
+
+    {
+
+        priceText.text = $"${newPrice:F2}"; // Format to 2 decimal places
+
+
+
+        // --- NEW FOR MVP: Update trend indicator and color ---
+
+        if (trendIndicatorImage != null)
+
+        {
+
+            if (newPrice > lastPrice)
+
+            {
+
+                trendIndicatorImage.sprite = upArrowSprite;
+
+                priceText.color = priceIncreaseColor;
+
+            }
+
+            else if (newPrice < lastPrice)
+
+            {
+
+                trendIndicatorImage.sprite = downArrowSprite;
+
+                priceText.color = priceDecreaseColor;
+
+            }
+
+            else
+
+            {
+
+                trendIndicatorImage.sprite = neutralSprite;
+
+                priceText.color = Color.white; // Default color
+
+            }
+
+            trendIndicatorImage.enabled = true; // Make sure it's visible
+
+        }
+
+        else
+
+        {
+
+            priceText.color = Color.white; // No trend image, keep default color
+
+        }
+
+        lastPrice = newPrice; // Update last price for next calculation
+
+    }
+
+
+
+    // --- NEW FOR MVP: Update owned shares display ---
+
+    private void UpdateOwnedSharesDisplay(string ticker, int newAmount)
+
+    {
+
+        if (currentStock != null && currentStock.Ticker == ticker)
+
+        {
+
+            ownedSharesText.text = $"Owned: {newAmount}";
+
+            // Disable sell button if no shares owned
+
+            if (sellButton != null) sellButton.interactable = (newAmount > 0);
+
+        }
+
+    }
+
+
+
+    private void OnBuyButtonClicked()
+
+    {
+
+        int quantity;
+
+        if (int.TryParse(buyQuantityInput.text, out quantity))
+
+        {
+
+            if (quantity <= 0)
+
+            {
+
+                ShowMessage("Quantity must be positive.", Color.red);
+
+                return;
+
+            }
+
+            if (StockTradeSystem.Instance != null && BudgetSystem.Instance != null)
+
+            {
+
+                float cost = quantity * currentStock.CurrentPrice;
+
+                if (!BudgetSystem.Instance.CanAfford(cost))
+
+                {
+
+                    ShowMessage("Cannot afford.", Color.red);
+
+                    return;
+
+                }
+
+
+
+                StockTradeSystem.Instance.BuyShares(currentStock.Ticker, quantity);
+
+                ShowMessage($"Bought {quantity} shares.", Color.green);
+
+                buyQuantityInput.text = ""; // Clear input after successful trade
+
+                AudioManager.Instance?.PlaySFX("transactionSuccess"); // --- NEW FOR MVP: Play sound ---
+
+            }
+
+        }
+
+        else
+
+        {
+
+            ShowMessage("Invalid quantity.", Color.red);
+
+        }
+
+    }
+
+
+
+    private void OnSellButtonClicked()
+
+    {
+
+        int quantity;
+
+        if (int.TryParse(sellQuantityInput.text, out quantity))
+
+        {
+
+            if (quantity <= 0)
+
+            {
+
+                ShowMessage("Quantity must be positive.", Color.red);
+
+                return;
+
+            }
+
+            if (StockTradeSystem.Instance != null)
+
+            {
+
+                int owned = StockTradeSystem.Instance.GetOwnedShares(currentStock.Ticker);
+
+                if (quantity > owned)
+
+                {
+
+                    ShowMessage($"Not enough shares. Owned: {owned}", Color.red);
+
+                    return;
+
+                }
+
+
+
+                StockTradeSystem.Instance.SellShares(currentStock.Ticker, quantity);
+
+                ShowMessage($"Sold {quantity} shares.", Color.green);
+
+                sellQuantityInput.text = ""; // Clear input after successful trade
+
+                AudioManager.Instance?.PlaySFX("transactionSuccess"); // --- NEW FOR MVP: Play sound ---
+
+            }
+
+        }
+
+        else
+
+        {
+
+            ShowMessage("Invalid quantity.", Color.red);
+
+        }
+
+    }
+
+
+
+    // --- NEW FOR MVP: Method to display short messages ---
+
+    private void ShowMessage(string msg, Color color)
+
+    {
+
+        if (messageText != null)
+
+        {
+
+            messageText.color = color;
+
+            messageText.text = msg;
+
+            // You might want a Coroutine here to clear the message after a few seconds
+
+            Invoke("ClearMessage", 3f); // Clear after 3 seconds
+
+        }
+
+    }
+
+
+
+    private void ClearMessage()
+
+    {
+
+        if (messageText != null)
+
+        {
+
+            messageText.text = "";
+
+        }
+
+    }
+
+}
+
+// File: Assets/Scripts/Systems/StockMarketSystem.cs
+
+using UnityEngine;
+
+using System.Collections.Generic;
+
+using System.Linq;
+
+using System;
+
+
+
+public class StockMarketSystem : MonoBehaviour
+
+{
+
+    public static StockMarketSystem Instance { get; private set; }
+
+
+
+    public List<Stock> currentStocks; // Live stocks in the game
+
+    public float updateIntervalInHours = 6f; // Update prices every 6 in-game hours
+
+
+
+    private Dictionary<string, List<float>> stockPriceHistory = new Dictionary<string, List<float>>();
+
+    private int maxHistoryPoints = 100; // Limit history points for graphs
+
+
+
+    void Awake()
+
+    {
+
+        if (Instance != null && Instance != this)
+
+        {
+
+            Destroy(gameObject);
+
+        }
+
+        else
+
+        {
+
+            Instance = this;
+
+        }
+
+    }
+
+
+
+    void Start()
+
+    {
+
+        // Load initial stock data from DataManager
+
+        if (DataManager.Instance != null)
+
+        {
+
+            currentStocks = new List<Stock>(DataManager.Instance.Stocks); // Create a mutable copy
+
+            foreach (var stock in currentStocks)
+
+            {
+
+                stockPriceHistory[stock.stockName] = new List<float>();
+
+                stockPriceHistory[stock.stockName].Add(stock.currentPrice); // Add initial price to history
+
+            }
+
+        }
+
+        else
+
+        {
+
+            Debug.LogError("DataManager not found. StockMarketSystem cannot initialize stocks.");
+
+            currentStocks = new List<Stock>(); // Initialize empty to avoid null reference
+
+        }
+
+
+
+        // Subscribe to TimeManager's hour advance event
+
+        if (TimeManager.Instance != null)
+
+        {
+
+            TimeManager.Instance.onHourAdvanced += OnHourAdvancedForStockUpdate;
+
+        }
+
+        // Subscribe to events from EventSystem
+
+        EventSystem.onEventTriggered += HandleGameEvent;
+
+
+
+        // Ensure DashboardUI updates with initial stock data
+
+        DashboardUI.Instance?.UpdateStockDisplays(currentStocks);
+
+    }
+
+
+
+    void OnDestroy()
+
+    {
+
+        if (TimeManager.Instance != null)
+
+        {
+
+            TimeManager.Instance.onHourAdvanced -= OnHourAdvancedForStockUpdate;
+
+        }
+
+        EventSystem.onEventTriggered -= HandleGameEvent;
+
+    }
+
+
+
+    void OnHourAdvancedForStockUpdate()
+
+    {
+
+        if (TimeManager.Instance.hour % updateIntervalInHours == 0)
+
+        {
+
+            UpdateStockPrices();
+
+        }
+
+    }
+
+
+
+    public void UpdateStockPrices()
+
+    {
+
+        foreach (var stock in currentStocks)
+
+        {
+
+            float change = stock.currentPrice * UnityEngine.Random.Range(-stock.volatility, stock.volatility);
+
+            stock.currentPrice += change;
+
+            stock.currentPrice = Mathf.Max(1f, stock.currentPrice); // Ensure price doesn't go below 1
+
+
+
+            // Add to history
+
+            if (!stockPriceHistory.ContainsKey(stock.stockName))
+
+            {
+
+                stockPriceHistory[stock.stockName] = new List<float>();
+
+            }
+
+            stockPriceHistory[stock.stockName].Add(stock.currentPrice);
+
+            if (stockPriceHistory[stock.stockName].Count > maxHistoryPoints)
+
+            {
+
+                stockPriceHistory[stock.stockName].RemoveAt(0); // Remove oldest
+
+            }
+
+        }
+
+        DashboardUI.Instance?.UpdateStockDisplays(currentStocks); // Update UI
+
+        StockTradeSystem.Instance?.RecalculateStockAssets(); // Recalculate player's owned stock value
+
+    }
+
+
+
+    public void HandleGameEvent(GameEvent gameEvent)
+
+    {
+
+        float sensitivity = GameManager.Instance?.playerEventSensitivity ?? 1.0f; // Get player's company sensitivity
+
+
+
+        foreach (var stock in currentStocks)
+
+        {
+
+            bool appliesToStock = gameEvent.target == "all" || stock.industry == gameEvent.target;
+
+
+
+            if (appliesToStock)
+
+            {
+
+                if (gameEvent.effect == "increase")
+
+                {
+
+                    stock.currentPrice *= (1 + gameEvent.magnitude * sensitivity);
+
+                }
+
+                else if (gameEvent.effect == "decrease")
+
+                {
+
+                    stock.currentPrice *= (1 - gameEvent.magnitude * sensitivity);
+
+                }
+
+                else if (gameEvent.effect == "volatility")
+
+                {
+
+                    stock.volatility *= (1 + gameEvent.magnitude * sensitivity); // Increase volatility
+
+                }
+
+            }
+
+        }
+
+        DashboardUI.Instance?.UpdateStockDisplays(currentStocks); // Force UI update
+
+    }
+
+
+
+    public Stock GetStock(string stockName)
+
+    {
+
+        return currentStocks.Find(s => s.stockName == stockName);
+
+    }
+
+
+
+    public List<float> GetStockPriceHistory(string stockName)
+
+    {
+
+        if (stockPriceHistory.ContainsKey(stockName))
+
+        {
+
+            return stockPriceHistory[stockName];
+
+        }
+
+        return new List<float>();
+
+    }
+
+}
+
+
+
+// Data class for a single stock (can be in its own file if preferred)
+
+[System.Serializable]
+
+public class Stock
+
+{
+
+    public string stockName;
+
+    public float currentPrice;
+
+    public float volatility;
+
+    public string industry;
+
+}
+
+// File: Assets/Scripts/Systems/StockTradeSystem.cs
+
+using UnityEngine;
+
+using System.Collections.Generic;
+
+using System.Linq;
+
+using Newtonsoft.Json;
+
+
+
+
+
+public class StockTradeSystem : MonoBehaviour
+
+{
+
+    public static StockTradeSystem Instance { get; private set; }
+
+
+
+    public Dictionary<string, int> playerOwnedStocks = new Dictionary<string, int>();
+
+
+
+    void Awake()
+
+    {
+
+        if (Instance != null && Instance != this)
+
+        {
+
+            Destroy(gameObject);
+
+        }
+
+        else
+
+        {
+
+            Instance = this;
+
+        }
+
+    }
+
+
+
+    void Start()
+
+    {
+
+        // Initialize owned stocks for all available stocks (from StockMarketSystem)
+
+        if (GameManager.Instance?.StockMarket != null && GameManager.Instance.StockMarket.currentStocks != null)
+
+        {
+
+            foreach (var stock in GameManager.Instance.StockMarket.currentStocks)
+
+            {
+
+                if (!playerOwnedStocks.ContainsKey(stock.stockName))
+
+                {
+
+                    playerOwnedStocks.Add(stock.stockName, 0);
+
+                }
+
+            }
+
+        }
+
+        RecalculateStockAssets(); // Calculate initial stock assets
+
+    }
+
+
+
+    public void BuyStock(string stockName, int quantity)
+
+    {
+
+        Stock stockToBuy = GameManager.Instance.StockMarket.GetStock(stockName);
+
+        if (stockToBuy == null)
+
+        {
+
+            Debug.LogWarning($"Stock {stockName} not found.");
+
+            return;
+
+        }
+
+
+
+        float cost = stockToBuy.currentPrice * quantity;
+
+
+
+        if (GameManager.Instance.Budget.cashOnHand >= cost)
+
+        {
+
+            GameManager.Instance.Budget.cashOnHand -= cost;
+
+            if (playerOwnedStocks.ContainsKey(stockName))
+
+            {
+
+                playerOwnedStocks[stockName] += quantity;
+
+            }
+
+            else
+
+            {
+
+                playerOwnedStocks.Add(stockName, quantity);
+
+            }
+
+            RecalculateStockAssets();
+
+            GameManager.Instance.Budget.UpdateNetWorth();
+
+            GameManager.Instance.Player.GainXP(quantity * 5); // Gain XP for buying stock
+
+            Debug.Log($"Bought {quantity} shares of {stockName} for ${cost:F2}. New shares: {playerOwnedStocks[stockName]}");
+
+            DashboardUI.Instance?.UpdateStockTradeUI(stockName, playerOwnedStocks[stockName]); // Update specific stock UI
+
+        }
+
+        else
+
+        {
+
+            Debug.LogWarning("Not enough cash to buy stock.");
+
+        }
+
+    }
+
+
+
+    public void SellStock(string stockName, int quantity)
+
+    {
+
+        Stock stockToSell = GameManager.Instance.StockMarket.GetStock(stockName);
+
+        if (stockToSell == null)
+
+        {
+
+            Debug.LogWarning($"Stock {stockName} not found.");
+
+            return;
+
+        }
+
+
+
+        if (playerOwnedStocks.ContainsKey(stockName) && playerOwnedStocks[stockName] >= quantity)
+
+        {
+
+            float revenue = stockToSell.currentPrice * quantity;
+
+            GameManager.Instance.Budget.cashOnHand += revenue;
+
+            playerOwnedStocks[stockName] -= quantity;
+
+            RecalculateStockAssets();
+
+            GameManager.Instance.Budget.UpdateNetWorth();
+
+            GameManager.Instance.Player.GainXP(quantity * 5); // Gain XP for selling stock
+
+            Debug.Log($"Sold {quantity} shares of {stockName} for ${revenue:F2}. Remaining shares: {playerOwnedStocks[stockName]}");
+
+            DashboardUI.Instance?.UpdateStockTradeUI(stockName, playerOwnedStocks[stockName]); // Update specific stock UI
+
+        }
+
+        else
+
+        {
+
+            Debug.LogWarning($"Not enough shares of {stockName} to sell {quantity}. Owned: {(playerOwnedStocks.ContainsKey(stockName) ? playerOwnedStocks[stockName] : 0)}");
+
+
+
+        }
+
+    }
+
+
+
+    public void RecalculateStockAssets()
+
+    {
+
+        float totalStockValue = 0f;
+
+        if (GameManager.Instance?.StockMarket != null && GameManager.Instance.StockMarket.currentStocks != null)
+
+        {
+
+            foreach (var ownedStockEntry in playerOwnedStocks)
+
+            {
+
+                Stock stock = GameManager.Instance.StockMarket.GetStock(ownedStockEntry.Key);
+
+                if (stock != null)
+
+                {
+
+                    totalStockValue += stock.currentPrice * ownedStockEntry.Value;
+
+                }
+
+            }
+
+        }
+
+        GameManager.Instance.Budget.stockAssets = totalStockValue; // Update BudgetSystem's stock assets
+
+        GameManager.Instance.Budget.UpdateNetWorth(); // Recalculate net worth after stock assets change
+
+    }
+
+
+
+    public int GetOwnedShares(string stockName)
+
+    {
+
+        if (playerOwnedStocks.ContainsKey(stockName))
+
+        {
+
+            return playerOwnedStocks[stockName];
+
+        }
+
+        return 0;
+
+    }
+
+}
+
+
+
+/* 
+
+[System.Serializable]
+
+public class Stock
+
+{
+
+    public string stockName;
+
+    public float currentPrice;
+
+    public float volatility;
+
+    public int sharesOwned = 0;
+
+}
+
+*/
+
+// File: Assets/Scripts/Systems/BudgetSystem.cs
+using UnityEngine;
+using System; // For Action
+
+public class BudgetSystem : MonoBehaviour
+{
+    public static BudgetSystem Instance { get; private set; }
+
+    public float income = 5000f;
+    public float expenses = 2000f;
+    public float cashOnHand = 10000f;
+    public float stockAssets = 0f; // This will be managed by StockTradeSystem
+    public float loanDebt = 0f; // This will be managed by CreditSystem
+    public float netWorth;
+
+    // Event for net worth changes (for GameManager to subscribe to)
+    public event Action<float> onNetWorthChanged;
+
+    void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+        }
+        else
+        {
+            Instance = this;
+        }
+    }
+
+    void Start()
+    {
+        // Subscribe to TimeManager's hour advance event for income/expense
+        if (TimeManager.Instance != null)
+        {
+            TimeManager.Instance.onHourAdvanced += OnHourAdvancedForBudget;
+        }
+        UpdateNetWorth();
+        DashboardUI.Instance?.UpdateBudgetUI(income, expenses, cashOnHand, netWorth);
+    }
+
+    void OnDestroy()
+    {
+        if (TimeManager.Instance != null)
+        {
+            TimeManager.Instance.onHourAdvanced -= OnHourAdvancedForBudget;
+        }
+    }
+
+    void OnHourAdvancedForBudget()
+    {
+        // Simulate income/expense less frequently, e.g., daily (every 24 hours)
+        if (TimeManager.Instance.hour == 0) // End of a day
+        {
+            SimulateIncomeExpense();
+        }
+    }
+
+    public void UpdateNetWorth()
+    {
+        netWorth = cashOnHand + stockAssets - loanDebt;
+        onNetWorthChanged?.Invoke(netWorth); // Notify subscribers (GameManager, AchievementSystem)
+        DashboardUI.Instance?.UpdateBudgetUI(income, expenses, cashOnHand, netWorth);
+    }
+
+    public void SimulateIncomeExpense()
+    {
+        cashOnHand += income - expenses;
+        Debug.Log($"Income/Expense cycle: Cash {income} - {expenses}. New cash: {cashOnHand:F2}");
+        UpdateNetWorth();
+    }
+}
+// File: Assets/Scripts/Systems/CreditSystem.cs
+using UnityEngine;
+
+public class CreditSystem : MonoBehaviour
+{
+    public static CreditSystem Instance { get; private set; }
+
+    public float loanAmount = 0f;
+    public float interestRatePerDay = 0.005f; // 0.5% interest per in-game day
+    public float bankruptcyThreshold = -10000f; // Duplicated from GameManager, ensure consistent
+
+    void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+        }
+        else
+        {
+            Instance = this;
+        }
+    }
+
+    void Start()
+    {
+        if (TimeManager.Instance != null)
+        {
+            TimeManager.Instance.onHourAdvanced += OnHourAdvancedForCredit;
+        }
+        DashboardUI.Instance?.UpdateCreditUI(loanAmount, loanAmount * interestRatePerDay); // Initial UI update
+    }
+
+    void OnDestroy()
+    {
+        if (TimeManager.Instance != null)
+        {
+            TimeManager.Instance.onHourAdvanced -= OnHourAdvancedForCredit;
+        }
+    }
+
+    void OnHourAdvancedForCredit()
+    {
+        // Apply interest daily (at end of day)
+        if (TimeManager.Instance.hour == 0 && loanAmount > 0)
+        {
+            ApplyInterest();
+        }
+
+        // Check for bankruptcy if net worth is too low and debt is high
+        if (GameManager.Instance.Budget.netWorth < bankruptcyThreshold && loanAmount > 0)
+        {
+            GameManager.Instance.LoseGame(); // Trigger lose condition
+        }
+    }
+
+    public void TakeLoan(float amount)
+    {
+        loanAmount += amount;
+        GameManager.Instance.Budget.cashOnHand += amount;
+        GameManager.Instance.Budget.loanDebt = loanAmount; // Keep BudgetSystem's debt in sync
+        GameManager.Instance.Budget.UpdateNetWorth();
+        DashboardUI.Instance?.UpdateCreditUI(loanAmount, loanAmount * interestRatePerDay);
+        GameManager.Instance.Player.GainXP(20); // Gain XP for taking a loan
+        Debug.Log($"Loan taken: ${amount:F2}. Total Loan: ${loanAmount:F2}");
+    }
+
+    public void PayBackLoan(float amount)
+    {
+        if (amount > loanAmount) amount = loanAmount;
+        if (GameManager.Instance.Budget.cashOnHand < amount)
+        {
+            Debug.LogWarning("Not enough cash to repay loan!");
+            return;
+        }
+
+        loanAmount -= amount;
+        GameManager.Instance.Budget.cashOnHand -= amount;
+        GameManager.Instance.Budget.loanDebt = loanAmount;
+        GameManager.Instance.Budget.UpdateNetWorth();
+        DashboardUI.Instance?.UpdateCreditUI(loanAmount, loanAmount * interestRatePerDay);
+        GameManager.Instance.Player.GainXP(30); // Gain XP for repaying loan
+        Debug.Log($"Loan repaid: ${amount:F2}. Remaining Loan: ${loanAmount:F2}");
+    }
+
+    void ApplyInterest()
+    {
+        float interest = loanAmount * interestRatePerDay;
+        GameManager.Instance.Budget.expenses += interest; // Interest adds to expenses
+        loanAmount += interest; // Interest also adds to principal for simple compounding
+        GameManager.Instance.Budget.loanDebt = loanAmount; // Update debt in BudgetSystem
+        GameManager.Instance.Budget.UpdateNetWorth();
+        DashboardUI.Instance?.UpdateCreditUI(loanAmount, loanAmount * interestRatePerDay);
+        Debug.Log($"Applied daily interest: ${interest:F2}. New loan amount: ${loanAmount:F2}");
+    }
+}

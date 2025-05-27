@@ -1,3 +1,4 @@
+/*
 using UnityEngine;
 
 public class PlayerManager : MonoBehaviour
@@ -21,4 +22,4 @@ public class PlayerManager : MonoBehaviour
     }
 
     // Add XP and Leveling logic here later as needed
-}
+}*/
