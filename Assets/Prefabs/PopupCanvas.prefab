@@ -172,7 +172,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 203, y: -149.99997}
+  m_AnchoredPosition: {x: 203, y: -296.99997}
   m_SizeDelta: {x: 307.816, y: 86.857}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4662336657246705880
@@ -387,6 +387,7 @@ MonoBehaviour:
   messageText: {fileID: 2639034544293404614}
   confirmButton: {fileID: 122090331090693097}
   cancelButton: {fileID: 9214524975175575704}
+  titleText: {fileID: 0}
 --- !u!1 &3807885435784696254
 GameObject:
   m_ObjectHideFlags: 0
@@ -423,7 +424,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -172, y: -150}
+  m_AnchoredPosition: {x: -172, y: -297}
   m_SizeDelta: {x: 307.816, y: 86.857}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8843830424720322402

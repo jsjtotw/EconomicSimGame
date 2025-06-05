@@ -1,0 +1,24 @@
+{
+  "entries": [
+    {
+      "term": "Asset",
+      "definition": "Something owned by an individual or business that has value."
+    },
+    {
+      "term": "Liability",
+      "definition": "Something owed to another party, such as a loan or debt."
+    },
+    {
+      "term": "Net Worth",
+      "definition": "The value of all assets minus all liabilities."
+    },
+    {
+      "term": "Stock",
+      "definition": "A type of security that signifies ownership in a corporation and represents a claim on a part of the corporation's assets and earnings."
+    },
+    {
+      "term": "Dividend",
+      "definition": "A sum of money paid regularly by a company to its shareholders out of its profits (or reserves)."
+    }
+  ]
+}

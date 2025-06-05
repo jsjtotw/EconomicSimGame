@@ -1,0 +1,46 @@
+{
+  "achievements": [
+    {
+      "id": "FIRST_1K_CASH",
+      "name": "Pocket Change",
+      "description": "Accumulate $1,000 in cash.",
+      "isUnlocked": false
+    },
+    {
+      "id": "FIRST_INVESTMENT",
+      "name": "Getting Started",
+      "description": "Make your very first stock investment.",
+      "isUnlocked": false
+    },
+    {
+      "id": "FIRST_LOAN",
+      "name": "Leveraged Up",
+      "description": "Take out your first loan.",
+      "isUnlocked": false
+    },
+    {
+      "id": "FIRST_50K_NETWORTH",
+      "name": "Humble Beginnings",
+      "description": "Reach a net worth of $50,000.",
+      "isUnlocked": false
+    },
+    {
+      "id": "TEN_INVESTMENTS",
+      "name": "Seasoned Investor",
+      "description": "Make 10 successful stock investments.",
+      "isUnlocked": false
+    },
+    {
+      "id": "SURVIVED_CRASH",
+      "name": "Market Survivor",
+      "description": "Successfully navigate a major market crash event.",
+      "isUnlocked": false
+    },
+    {
+      "id": "MILLIONAIRE_CLUB",
+      "name": "Millionaire Club",
+      "description": "Achieve a net worth of $1,000,000.",
+      "isUnlocked": false
+    }
+  ]
+}
