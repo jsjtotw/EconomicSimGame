@@ -1,0 +1,80 @@
+[
+  {
+    "id": "market_crash",
+    "title": "Market Crash!",
+    "description": "All stock prices drop by {percentage}%.",
+    "effect": "crash",
+    "minValue": 0.25,
+    "maxValue": 0.40
+  },
+  {
+    "id": "market_boom",
+    "title": "Market Boom!",
+    "description": "All stock prices rise by {percentage}%.",
+    "effect": "boom",
+    "minValue": 0.15,
+    "maxValue": 0.35
+  },
+  {
+    "id": "dividend_bonus",
+    "title": "Dividend Bonus",
+    "description": "You receive a bonus of ${amount}.",
+    "effect": "bonus",
+    "minValue": 800,
+    "maxValue": 1500
+  },
+  {
+    "id": "tax_audit",
+    "title": "Tax Audit",
+    "description": "You lose ${amount} in taxes.",
+    "effect": "loss",
+    "minValue": 400,
+    "maxValue": 700
+  },
+  {
+    "id": "tech_surge",
+    "title": "{industry} Sector Surge!",
+    "description": "The {industry} sector experiences a surge in stock prices of {percentage}%.",
+    "effect": "industry_boom",
+    "minValue": 0.10,
+    "maxValue": 0.20
+  },
+  {
+    "id": "energy_regulations",
+    "title": "{industry} Sector Hit by Regulations",
+    "description": "The {industry} sector suffers stock price declines of {percentage}%.",
+    "effect": "industry_crash",
+    "minValue": 0.15,
+    "maxValue": 0.25
+  },
+  {
+    "id": "product_recall",
+    "title": "Product Recall Scandal at {company}!",
+    "description": "The stock of {company} plunges by {percentage}%.",
+    "effect": "company_crash",
+    "minValue": 0.30,
+    "maxValue": 0.50
+  },
+  {
+    "id": "viral_success",
+    "title": "Viral Marketing Win for {company}!",
+    "description": "{company}'s stock soars by {percentage}%.",
+    "effect": "company_boom",
+    "minValue": 0.25,
+    "maxValue": 0.40
+  },
+  {
+    "id": "quarterly_earnings",
+    "title": "Quarterly Earnings Report",
+    "description": "Mixed earnings cause stock price shifts of up to {percentage}%.",
+    "effect": "mixed_shift",
+    "minValue": 0.05,
+    "maxValue": 0.15
+  },
+  {
+    "id": "ceo_scandal",
+    "title": "CEO Scandal",
+    "description": "Rumors swirl causing news fluff without direct value impact.",
+    "effect": "news_fluff"
+  }
+]

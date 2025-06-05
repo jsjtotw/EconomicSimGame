@@ -1,0 +1,212 @@
+{
+  "stocks": [
+    {
+      "name": "Zentraq Dynamics",
+      "industry": "Technology",
+      "stockID": "ZDY",
+      "price": 132.4,
+      "volatility": 0.06,
+      "volume": 9500
+    },
+    {
+      "name": "Lychee Labs",
+      "industry": "Technology",
+      "stockID": "LYL",
+      "price": 87.3,
+      "volatility": 0.08,
+      "volume": 4200
+    },
+    {
+      "name": "Verdant Roots Ltd.",
+      "industry": "Agriculture",
+      "stockID": "VRL",
+      "price": 37.5,
+      "volatility": 0.03,
+      "volume": 2800
+    },
+    {
+      "name": "Omnivore Genetech",
+      "industry": "Agriculture",
+      "stockID": "OMG",
+      "price": 91.2,
+      "volatility": 0.07,
+      "volume": 6000
+    },
+    {
+      "name": "CoreSpire Capital",
+      "industry": "Finance",
+      "stockID": "CSC",
+      "price": 205.0,
+      "volatility": 0.04,
+      "volume": 11000
+    },
+    {
+      "name": "Kestrel Finance",
+      "industry": "Finance",
+      "stockID": "KSF",
+      "price": 53.6,
+      "volatility": 0.06,
+      "volume": 7000
+    },
+    {
+      "name": "Aegis Biomedical",
+      "industry": "Healthcare",
+      "stockID": "AGB",
+      "price": 99.7,
+      "volatility": 0.05,
+      "volume": 5600
+    },
+    {
+      "name": "Omnivore Genetech",
+      "industry": "Healthcare",
+      "stockID": "OMG",
+      "price": 91.2,
+      "volatility": 0.07,
+      "volume": 6000
+    },
+    {
+      "name": "Solarian Edge",
+      "industry": "Energy",
+      "stockID": "SRE",
+      "price": 48.9,
+      "volatility": 0.09,
+      "volume": 8800
+    },
+    {
+      "name": "HydroVibe Corp.",
+      "industry": "Energy",
+      "stockID": "HVC",
+      "price": 65.1,
+      "volatility": 0.06,
+      "volume": 4700
+    },
+    {
+      "name": "DailyCrest Co.",
+      "industry": "Consumer Goods",
+      "stockID": "DCC",
+      "price": 32.4,
+      "volatility": 0.02,
+      "volume": 13000
+    },
+    {
+      "name": "Freshilo Inc.",
+      "industry": "Consumer Goods",
+      "stockID": "FRS",
+      "price": 26.9,
+      "volatility": 0.03,
+      "volume": 9100
+    },
+    {
+      "name": "BlueGrid Utilities",
+      "industry": "Utilities",
+      "stockID": "BGU",
+      "price": 58.3,
+      "volatility": 0.01,
+      "volume": 7500
+    },
+    {
+      "name": "HydroNet Systems",
+      "industry": "Utilities",
+      "stockID": "HNS",
+      "price": 62.7,
+      "volatility": 0.02,
+      "volume": 6200
+    },
+    {
+      "name": "Netspire Comm.",
+      "industry": "Telecommunications",
+      "stockID": "NSC",
+      "price": 44.8,
+      "volatility": 0.03,
+      "volume": 8200
+    },
+    {
+      "name": "Auralux Media",
+      "industry": "Telecommunications",
+      "stockID": "ALM",
+      "price": 77.5,
+      "volatility": 0.06,
+      "volume": 10100
+    },
+    {
+      "name": "BricHaus Construction",
+      "industry": "Real Estate",
+      "stockID": "BHC",
+      "price": 138.6,
+      "volatility": 0.04,
+      "volume": 5300
+    },
+    {
+      "name": "MetroLuxe Properties",
+      "industry": "Real Estate",
+      "stockID": "MLP",
+      "price": 121.0,
+      "volatility": 0.03,
+      "volume": 4700
+    },
+    {
+      "name": "TitanHex Industries",
+      "industry": "Industrials",
+      "stockID": "THX",
+      "price": 115.2,
+      "volatility": 0.05,
+      "volume": 8700
+    },
+    {
+      "name": "ForgeLink Robotics",
+      "industry": "Industrials",
+      "stockID": "FLR",
+      "price": 104.3,
+      "volatility": 0.06,
+      "volume": 7900
+    },
+    {
+      "name": "Pindrop Courier",
+      "industry": "Transportation",
+      "stockID": "PND",
+      "price": 49.6,
+      "volatility": 0.07,
+      "volume": 4600
+    },
+    {
+      "name": "SkyBridge Airways",
+      "industry": "Transportation",
+      "stockID": "SKB",
+      "price": 83.9,
+      "volatility": 0.05,
+      "volume": 9100
+    },
+    {
+      "name": "Reverbyte",
+      "industry": "Entertainment",
+      "stockID": "RVB",
+      "price": 59.2,
+      "volatility": 0.09,
+      "volume": 10200
+    },
+    {
+      "name": "Auralux Media",
+      "industry": "Entertainment",
+      "stockID": "ALM",
+      "price": 77.5,
+      "volatility": 0.06,
+      "volume": 10100
+    },
+    {
+      "name": "HelioMart",
+      "industry": "Retail",
+      "stockID": "HLM",
+      "price": 98.7,
+      "volatility": 0.04,
+      "volume": 11800
+    },
+    {
+      "name": "SnapBasket",
+      "industry": "Retail",
+      "stockID": "SNB",
+      "price": 39.4,
+      "volatility": 0.05,
+      "volume": 7600
+    }
+  ]
+}
